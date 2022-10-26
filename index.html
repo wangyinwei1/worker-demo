@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="demo">
+      <button id="js">js方式(1W条-卡顿20S左右)</button>
+      <button id="worker">worker方式(1W条)</button>
+      <button id="worker2">worker方式(10W条)</button>
+      <button id="worker3">worker方式,先js计算再渲染(测试40W条)</button>
+      <button id="js2">js方式,先js计算再渲染(测试40W条)</button>
+      <button id="clear">清空</button>
+    </div>
+    <div id="result"></div>
+    <div id="test" style="width: 100%; word-break: break-all"></div>
+  </body>
+  <script src="./data.js"></script>
+  <script src="./testData.js"></script>
+  <script>
+    // 创建worker线程
+    const myWorker = new Worker("work.js");
+    // 使用js(1W)直接处理数组
+    document.getElementById("js").addEventListener("click", () => {
+      document.getElementById("test").innerText = "";
+      document.getElementById("result").innerText = "循环进行中";
+      console.time("main");
+      array.forEach((item) => {
+        // 循环一次改变一次dom 让卡顿效果更明显
+        document.getElementById("test").innerText += item.name;
+      });
+      console.timeEnd("main");
+      document.getElementById("result").innerText = "循环结束";
+    });
+    // 使用worker(1W)处理数组
+    document.getElementById("worker").addEventListener("click", () => {
+      document.getElementById("test").innerText = "";
+      document.getElementById("result").innerText = "循环进行中";
+      console.time("work");
+      myWorker.postMessage({ data: array, type: "one" });
+      myWorker.onmessage = (e) => {
+        document.getElementById("test").innerText += e.data;
+        if (e.data === 9999) {
+          document.getElementById("result").innerText = "循环结束";
+          console.timeEnd("work");
+        }
+      };
+    });
+    // 使用worker(10W)处理数组
+    document.getElementById("worker2").addEventListener("click", () => {
+      document.getElementById("test").innerText = "";
+      document.getElementById("result").innerText = "循环进行中";
+      console.time("work-10W");
+      myWorker.postMessage({ data: array2, type: "one" });
+      myWorker.onmessage = (e) => {
+        document.getElementById("test").innerText += e.data;
+        if (e.data === 9999) {
+          document.getElementById("result").innerText = "循环结束";
+          console.timeEnd("work-10W");
+        }
+      };
+    });
+    // 使用worker(40W)处理数组
+    document.getElementById("worker3").addEventListener("click", () => {
+      document.getElementById("test").innerText = "";
+      document.getElementById("result").innerText = "循环进行中";
+      console.time("work-40W");
+      myWorker.postMessage({ data: array3, type: "all" });
+      myWorker.onmessage = (e) => {
+        document.getElementById("test").innerText += e.data;
+        document.getElementById("result").innerText = "循环结束";
+        console.timeEnd("work-40W");
+      };
+    });
+    // 使用js(40W)直接处理数组
+    document.getElementById("js2").addEventListener("click", () => {
+      document.getElementById("test").innerText = "";
+      document.getElementById("result").innerText = "循环进行中";
+      console.time("main40W");
+      let str = "";
+      array3.forEach((item) => {
+        str += item.name;
+      });
+      document.getElementById("test").innerText += str;
+      console.timeEnd("main40W");
+      document.getElementById("result").innerText = "循环结束";
+    });
+    // 清空数据
+    document.getElementById("clear").addEventListener("click", () => {
+      document.getElementById("test").innerText = "";
+      document.getElementById("result").innerText = "";
+    });
+  </script>
+</html>
